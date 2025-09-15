@@ -13,6 +13,10 @@ import org.springframework.web.client.RestTemplate;
 public class UsuarioService {
     private final String apiKey = "8fce607166c57f7d780af4d5db77982a"; 
     private final RestTemplate restTemplate = new RestTemplate();
+    
+    public String getApiKey() {
+        return apiKey;
+    }
 
     public String autenticarConServicioExterno(String usuario, String contrasena) {
 
@@ -58,5 +62,21 @@ public class UsuarioService {
 
         return null;
     }
+    
+    public Integer obtenerAccountId(String sessionId) {
+    try {
+        String url = "https://api.themoviedb.org/3/account?api_key=" + apiKey + "&session_id=" + sessionId;
+        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return (Integer) response.getBody().get("id");
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return null;
+}
+
     
 }

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil de Usuario</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Detalles de la cuenta</h2>
+
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <h4>Usuario: <span th:text="${cuenta.username}">Usuario</span></h4>
+            <p><strong>ID:</strong> <span th:text="${cuenta.id}">-</span></p>
+            <p><strong>Nombre:</strong> <span th:text="${cuenta.name}">No disponible</span></p>
+            <p><strong>Idioma:</strong> <span th:text="${cuenta.iso_639_1}">-</span></p>
+            <p><strong>País:</strong> <span th:text="${cuenta.iso_3166_1}">-</span></p>
+
+           
+            <div th:if="${cuenta.avatar != null}">
+                <img th:if="${cuenta.avatar.tmdb != null}" 
+                     th:src="@{'https://image.tmdb.org/t/p/w200' + ${cuenta.avatar.tmdb.avatar_path}}" 
+                     class="img-circle" width="100" height="100">
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

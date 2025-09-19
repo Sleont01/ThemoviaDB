@@ -8,30 +8,6 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
   <style>
-   
-   .row {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-   .col-md-5th {
-    width: 20%;
-    float: left;
-    padding: 10px;
-  }
-
-  /* En pantallas pequeñas puedes mostrar 2 o 3 por fila */
-  @media (max-width: 768px) {
-    .col-md-5th {
-      width: 50%; /* 2 por fila */
-    }
-  }
-
-  @media (max-width: 576px) {
-    .col-md-5th {
-      width: 100%; /* 1 por fila */
-    }
-  }
    .movie-card {
     font-family: Arial, sans-serif;
     background-color: #fff;
@@ -103,9 +79,7 @@
 
   <!-- Mostrar películas en estilo card -->
   <div class="row" th:if="${peliculas}">
-<!--    <div class="col-md-3 col-sm-6 mb-4" th:each="p, iterStat : ${peliculas}">-->
-        <div class="col-md-5th mb-4" th:each="p, iterStat : ${peliculas}">
-
+    <div class="col-md-3 col-sm-6 mb-4" th:each="p, iterStat : ${peliculas}">
       
       <!-- Limitar a 20 películas -->
       <th:block th:if="${iterStat.index >= 20}" th:remove="all"></th:block>
@@ -139,12 +113,6 @@
     Ver Detalles
 </button>
 
- <button type="button" class="btn btn-sm mt-2 btn-favorito"
-        data-movieid="${p.id}"
-        th:classappend="${#lists.contains(favoritasIds, p.id)} ? ' btn-danger' : ' btn-default'"
-        th:title="${#lists.contains(favoritasIds, p.id)} ? 'Ya en favoritos' : 'Añadir a favoritos'">
-    <span th:text="${#lists.contains(favoritasIds, p.id)} ? '❤️' : '🤍'"></span>
-</button>
 
         </div>
       </div>
@@ -197,30 +165,6 @@
         })
         .catch(error => console.error('Error al cargar detalles:', error));
 }
-
-$(document).ready(function() {
-    $('.btn-favorito').click(function() {
-        let button = $(this);
-        let movieId = button.data('movieid');
-
-        $.post('/usuario/perfil/favoritas/agregar', { movieId: movieId })
-            .done(function() {
-                // Cambiar el estilo y el icono en vivo
-                if (button.hasClass('btn-default')) {
-                    button.removeClass('btn-default').addClass('btn-danger');
-                    button.find('span').text('❤️');
-                    button.attr('title', 'Ya en favoritos');
-                } else {
-                    button.removeClass('btn-danger').addClass('btn-default');
-                    button.find('span').text('🤍');
-                    button.attr('title', 'Añadir a favoritos');
-                }
-            })
-            .fail(function() {
-                alert('Error al añadir a favoritos');
-            });
-    });
-});
 
 </script>
 

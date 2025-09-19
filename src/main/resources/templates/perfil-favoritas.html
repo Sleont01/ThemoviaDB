@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Películas Favoritas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <style>
+   .movie-card {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    margin: 10px 0 20px 0;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out;
+    text-align: center;
+  }
+  .movie-card:hover {
+    transform: scale(1.05);
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+  }
+  .card-text {
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">WebSiteName</a>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar">
+      <ul class="nav navbar-nav">
+        <li><a th:href="@{/usuario/perfil/detalles}">Detalles de la cuenta</a></li>
+        <li class="active"><a th:href="@{/usuario/perfil/favoritas}">Películas favoritas</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <form th:action="@{/usuario/logout}" method="post">
+            <button type="submit">Cerrar sesión</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+  
+<div class="container mt-4">
+  <h3 class="text-center mb-4">✨ Mis Películas Favoritas</h3>
+
+  <!-- Mostrar mensaje de error si existe -->
+  <div th:if="${error}" class="alert alert-danger text-center" th:text="${error}"></div>
+  <div th:if="${mensaje}" class="alert alert-success text-center" th:text="${mensaje}"></div>
+
+  <!-- Mostrar favoritas -->
+  <div class="row" th:if="${peliculasFav}">
+    <div class="col-md-3 col-sm-6 mb-4" th:each="p : ${peliculasFav}">
+      <div class="card shadow-sm h-100 movie-card">
+        <img class="card-img-top img-fluid rounded"
+             th:if="${p['poster_path'] != null}"
+             th:src="'https://image.tmdb.org/t/p/w300/' + ${p['poster_path']}"
+             alt="Poster">
+
+        <img class="card-img-top img-fluid rounded"
+             th:if="${p['poster_path'] == null}"
+             src="/images/no-poster.png"
+             alt="No poster">
+
+        <div class="card-body text-center">
+          <h5 class="card-title mb-2" th:text="${p['title'] != null ? p['title'] : 'Sin título'}">Título</h5>
+          <p class="card-text text-muted small mb-1">
+            ⭐ <span th:text="${p['vote_average']}">0</span> 
+            (<span th:text="${p['vote_count']}">0</span> votos)
+          </p>
+          <p class="card-text text-muted small">
+            📅 <span th:text="${p['release_date'] != null ? p['release_date'] : 'Sin fecha'}">Fecha</span>
+          </p>
+
+          <button class="btn btn-sm btn-primary mt-2"
+                  th:onclick="'verDetalle(' + ${p.id} + ');'">
+              Ver Detalles
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+<!-- Modal para detalles -->
+<div class="modal fade" id="detalleModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id="modalTitulo">Título</h4>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function verDetalle(movieId) {
+  fetch('/usuario/detalle-pelicula/' + movieId)
+      .then(response => response.json())
+      .then(data => {
+          $('#modalTitulo').text(data.title || 'Sin título');
+          let contenido = `
+              <div class="row">
+                  <div class="col-md-4">
+                      <img class="img-fluid rounded" 
+                           src="https://image.tmdb.org/t/p/w300/${data.poster_path}" 
+                           alt="Poster">
+                  </div>
+                  <div class="col-md-8">
+                      <p><strong>Resumen:</strong> ${data.overview || 'No disponible'}</p>
+                      <p><strong>Fecha de estreno:</strong> ${data.release_date || 'No disponible'}</p>
+                      <p><strong>Votos promedio:</strong> ${data.vote_average || 0} ⭐</p>
+                      <p><strong>Cantidad de votos:</strong> ${data.vote_count || 0}</p>
+                      <p><strong>Idioma original:</strong> ${data.original_language || '-'}</p>
+                      <p><strong>Duración:</strong> ${data.runtime || '-'} min</p>
+                  </div>
+              </div>
+          `;
+          $('#modalBody').html(contenido);
+          $('#detalleModal').modal('show');
+      })
+      .catch(error => console.error('Error al cargar detalles:', error));
+}
+</script>
+
+</body>
+</html>

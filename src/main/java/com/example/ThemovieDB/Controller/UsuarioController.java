@@ -4,9 +4,11 @@ package com.example.ThemovieDB.Controller;
 
 import com.example.ThemovieDB.Service.UsuarioService;
 import jakarta.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -35,12 +37,14 @@ public class UsuarioController {
     @GetMapping
     public String Index(Model model){
         
+        model.addAttribute("favoritasIds", new ArrayList<Integer>());
+        
         return "vista";
         
         
     }
     
-    @PostMapping("/iniciar-sesion")
+@PostMapping("/iniciar-sesion")
 public String iniciarSesion(
         @RequestParam("usuario") String usuario,
         @RequestParam("contrasena") String contrasena,
@@ -52,8 +56,10 @@ public String iniciarSesion(
 
     if (sessionId != null) {
         try {
-            
+            // Guardar la sesión en el backend
             session.setAttribute("session_id", sessionId);
+
+            // Consultar datos de la cuenta
             String urlAccount = "https://api.themoviedb.org/3/account"
                     + "?api_key=" + autenticacionService.getApiKey()
                     + "&session_id=" + sessionId;
@@ -61,36 +67,96 @@ public String iniciarSesion(
             Map<String, Object> cuenta = restTemplate.getForObject(urlAccount, Map.class);
             if (cuenta != null && cuenta.get("id") != null) {
                 session.setAttribute("account_id", (Integer) cuenta.get("id"));
-                model.addAttribute("cuenta", cuenta); 
+                model.addAttribute("cuenta", cuenta);
             }
-           
-            String url = "https://api.themoviedb.org/3/movie/popular"
+
+            // Base de la URL de películas populares
+            String baseUrl = "https://api.themoviedb.org/3/movie/popular"
                     + "?api_key=" + autenticacionService.getApiKey()
-                    + "&language=es-MX&page=1";
+                    + "&language=es-MX&page=";
 
-     
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-            Map<String, Object> responseBody = response.getBody();
+            List<Map<String, Object>> peliculas = new ArrayList<>();
 
-            if (responseBody != null && responseBody.containsKey("results")) {
-                List<Map<String, Object>> peliculas = (List<Map<String, Object>>) responseBody.get("results");
-                model.addAttribute("peliculas", peliculas);
+            // Recorremos SOLO las 2 primeras páginas
+            for (int i = 1; i <= 2; i++) {
+                ResponseEntity<Map> response = restTemplate.getForEntity(baseUrl + i, Map.class);
+                Map<String, Object> pageBody = response.getBody();
+                if (pageBody != null && pageBody.containsKey("results")) {
+                    peliculas.addAll((List<Map<String, Object>>) pageBody.get("results"));
+                }
             }
 
-            session.setAttribute("session_id", sessionId);
-            return "vista"; 
+            // Pasamos las películas al modelo
+            model.addAttribute("peliculas", peliculas);
+            model.addAttribute("favoritasIds", new ArrayList<Integer>());
+
+            return "vista";
 
         } catch (Exception e) {
             e.printStackTrace();
             session.setAttribute("session_id", sessionId);
             model.addAttribute("error", "Sesión iniciada pero error al cargar películas populares");
-            return "vista"; 
+            return "vista";
         }
     } else {
         model.addAttribute("error", "Usuario o contraseña incorrecta");
-        return "Login"; 
+        return "Login";
     }
 }
+
+
+    
+//    @PostMapping("/iniciar-sesion")
+//public String iniciarSesion(
+//        @RequestParam("usuario") String usuario,
+//        @RequestParam("contrasena") String contrasena,
+//        Model model,
+//        HttpSession session) {
+//
+//    String sessionId = autenticacionService.autenticarConServicioExterno(usuario, contrasena);
+//    RestTemplate restTemplate = new RestTemplate();
+//
+//    if (sessionId != null) {
+//        try {
+//            
+//            session.setAttribute("session_id", sessionId);
+//            String urlAccount = "https://api.themoviedb.org/3/account"
+//                    + "?api_key=" + autenticacionService.getApiKey()
+//                    + "&session_id=" + sessionId;
+//
+//            Map<String, Object> cuenta = restTemplate.getForObject(urlAccount, Map.class);
+//            if (cuenta != null && cuenta.get("id") != null) {
+//                session.setAttribute("account_id", (Integer) cuenta.get("id"));
+//                model.addAttribute("cuenta", cuenta); 
+//            }
+//           
+//            String url = "https://api.themoviedb.org/3/movie/popular"
+//                    + "?api_key=" + autenticacionService.getApiKey()
+//                    + "&language=es-MX&page=1";
+//
+//     
+//            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+//            Map<String, Object> responseBody = response.getBody();
+//
+//            if (responseBody != null && responseBody.containsKey("results")) {
+//                List<Map<String, Object>> peliculas = (List<Map<String, Object>>) responseBody.get("results");
+//                model.addAttribute("peliculas", peliculas);
+//            }
+//
+//            session.setAttribute("session_id", sessionId);
+//            return "vista"; 
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            session.setAttribute("session_id", sessionId);
+//            model.addAttribute("error", "Sesión iniciada pero error al cargar películas populares");
+//            return "vista"; 
+//        }
+//    } else {
+//        model.addAttribute("error", "Usuario o contraseña incorrecta");
+//        return "Login"; 
+//    }
+//}
 
 
 
@@ -228,7 +294,7 @@ public String perfilFavoritas(Model model, HttpSession session) {
 
     RestTemplate restTemplate = new RestTemplate();
 
-    // Obtener películas favoritas
+    // Obtener pelÃ­culas favoritas
     String urlFav = "https://api.themoviedb.org/3/account/" + accountId + "/favorite/movies"
             + "?api_key=" + autenticacionService.getApiKey()
             + "&session_id=" + sessionId
@@ -240,6 +306,40 @@ public String perfilFavoritas(Model model, HttpSession session) {
 
     return "perfil-favoritas";
 }
+@PostMapping("/perfil/favoritas/agregar")
+@ResponseBody
+public String agregarAFavoritosAjax(@RequestParam("movieId") Integer movieId,
+                                    HttpSession session) {
+    String sessionId = (String) session.getAttribute("session_id");
+    Integer accountId = (Integer) session.getAttribute("account_id");
+
+    if (sessionId == null || accountId == null) {
+        return "ERROR"; 
+    }
+
+    RestTemplate restTemplate = new RestTemplate();
+    String url = "https://api.themoviedb.org/3/account/" + accountId + "/favorite"
+            + "?api_key=" + autenticacionService.getApiKey()
+            + "&session_id=" + sessionId;
+
+    Map<String, Object> body = new HashMap<>();
+    body.put("media_type", "movie");
+    body.put("media_id", movieId);
+    body.put("favorite", true);
+
+    try {
+        restTemplate.postForEntity(url, body, String.class);
+        return "OK"; 
+    } catch (Exception e) {
+        e.printStackTrace();
+        return "ERROR"; 
+    }
+}
+
+
+
+
+
 
       
 }
